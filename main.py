@@ -2,7 +2,7 @@ import streamlit as st
 import tempfile
 import os
 from PIL import Image, ImageFilter
-from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, TextClip
+from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
 
 # Hata önleme ayarları
 if not hasattr(Image, 'Resampling'):
@@ -17,14 +17,13 @@ st.title("🎵 Music Video Maker")
 if "labels" not in st.session_state:
     st.session_state.labels = ["EchoVerse Records", "Reborium Music Group"]
 
-st.subheader("Label Settings")
 new_label_input = st.text_input("Create New Label", key="new_label_input")
 if st.button("Add New Label"):
     if new_label_input.strip():
         st.session_state.labels.append(new_label_input.strip())
         st.success("Label eklendi!")
 
-selected_label = st.selectbox("Select Label to show on video", st.session_state.labels)
+selected_label = st.selectbox("Select Label", st.session_state.labels)
 
 # Dosya Yükleme
 uploaded_image = st.file_uploader("Upload Cover Image", type=["png", "jpg", "jpeg"])
@@ -32,7 +31,7 @@ uploaded_audio = st.file_uploader("Upload MP3 File", type=["mp3"])
 
 if uploaded_image and uploaded_audio:
     if st.button("Generate Music Video"):
-        with st.spinner("1080p Video oluşturuluyor, bekleyin..."):
+        with st.spinner("1080p Video oluşturuluyor..."):
             try:
                 # Geçici dosyalar
                 t_img = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
@@ -51,21 +50,15 @@ if uploaded_image and uploaded_audio:
                 final_bg_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
                 bg.save(final_bg_path)
 
-                # Video Oluşturma
+                # Video Oluşturma (TextClip iptal edildi)
                 audio_clip = AudioFileClip(t_aud.name)
                 video_clip = ImageClip(final_bg_path).set_duration(audio_clip.duration)
-
-                # Label Yazısı (Sol alt)
-                txt_clip = TextClip(selected_label, fontsize=70, color='white', font='Arial-Bold')
-                txt_clip = txt_clip.set_position((50, 950)).set_duration(audio_clip.duration)
-
-                # Birleştir
-                final_video = CompositeVideoClip([video_clip, txt_clip]).set_audio(audio_clip)
+                final_video = video_clip.set_audio(audio_clip)
                 
                 output_file = "generated_video.mp4"
                 final_video.write_videofile(output_file, fps=24, codec="libx264", bitrate="8000k")
 
-                st.success("Video Başarıyla Oluşturuldu!")
+                st.success(f"Video Başarıyla Oluşturuldu! (Label: {selected_label})")
                 st.video(output_file)
 
                 # Temizlik
