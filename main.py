@@ -1,65 +1,77 @@
 import streamlit as st
 import tempfile
 import os
-from PIL import Image
-import sys
+from PIL import Image, ImageFilter
+from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, TextClip
 
-# 1. Hata giderme
+# Hata önleme ayarları
 if not hasattr(Image, 'Resampling'):
     Image.Resampling = Image
 if not hasattr(Image, 'ANTIALIAS'):
     Image.ANTIALIAS = Image.Resampling.LANCZOS
 
-# MoviePy'yi import etmeden önce kütüphanenin yüklü olduğundan emin ol
-try:
-    from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
-except ImportError:
-    st.error("MoviePy yüklenemedi. Lütfen requirements.txt dosyanızı kontrol edin.")
-    st.stop()
-
-# 2. Sayfa ayarları
 st.set_page_config(page_title="Music Video Maker", layout="centered")
-
 st.title("🎵 Music Video Maker")
 
-# Label yönetimi
+# Label Yönetimi
 if "labels" not in st.session_state:
     st.session_state.labels = ["EchoVerse Records", "Reborium Music Group"]
 
 st.subheader("Label Settings")
-new_label = st.text_input("Create New Label", key="label_giris_kutusu")
-
+new_label_input = st.text_input("Create New Label", key="new_label_input")
 if st.button("Add New Label"):
-    if new_label.strip() != "":
-        st.session_state.labels.append(new_label.strip())
-        st.success(f"Added: {new_label}")
+    if new_label_input.strip():
+        st.session_state.labels.append(new_label_input.strip())
+        st.success("Label eklendi!")
 
-selected_label = st.selectbox("Select Label", st.session_state.labels)
+selected_label = st.selectbox("Select Label to show on video", st.session_state.labels)
 
-# Dosya yükleme
+# Dosya Yükleme
 uploaded_image = st.file_uploader("Upload Cover Image", type=["png", "jpg", "jpeg"])
 uploaded_audio = st.file_uploader("Upload MP3 File", type=["mp3"])
 
 if uploaded_image and uploaded_audio:
-    st.write("Video oluşturulmaya hazır!")
-    
     if st.button("Generate Music Video"):
-        with st.spinner("Video oluşturuluyor..."):
+        with st.spinner("1080p Video oluşturuluyor, bekleyin..."):
             try:
-                tfile_img = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-                tfile_img.write(uploaded_image.read())
+                # Geçici dosyalar
+                t_img = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                t_img.write(uploaded_image.read())
+                t_aud = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+                t_aud.write(uploaded_audio.read())
+
+                # 1080p Hazırlık
+                img = Image.open(t_img.name).convert("RGB")
+                bg = img.resize((1920, 1080)).filter(ImageFilter.GaussianBlur(radius=30))
+                img.thumbnail((1920, 1080), Image.ANTIALIAS)
                 
-                tfile_aud = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-                tfile_aud.write(uploaded_audio.read())
+                offset = ((1920 - img.width) // 2, (1080 - img.height) // 2)
+                bg.paste(img, offset)
                 
-                audio_clip = AudioFileClip(tfile_aud.name)
-                image_clip = ImageClip(tfile_img.name).set_duration(audio_clip.duration)
-                video = CompositeVideoClip([image_clip.set_audio(audio_clip)])
+                final_bg_path = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
+                bg.save(final_bg_path)
+
+                # Video Oluşturma
+                audio_clip = AudioFileClip(t_aud.name)
+                video_clip = ImageClip(final_bg_path).set_duration(audio_clip.duration)
+
+                # Label Yazısı (Sol alt)
+                txt_clip = TextClip(selected_label, fontsize=70, color='white', font='Arial-Bold')
+                txt_clip = txt_clip.set_position((50, 950)).set_duration(audio_clip.duration)
+
+                # Birleştir
+                final_video = CompositeVideoClip([video_clip, txt_clip]).set_audio(audio_clip)
                 
-                output_filename = "final_video.mp4"
-                video.write_videofile(output_filename, fps=24)
-                
-                st.success("Video başarıyla oluşturuldu!")
-                st.video(output_filename)
+                output_file = "generated_video.mp4"
+                final_video.write_videofile(output_file, fps=24, codec="libx264", bitrate="8000k")
+
+                st.success("Video Başarıyla Oluşturuldu!")
+                st.video(output_file)
+
+                # Temizlik
+                os.remove(t_img.name)
+                os.remove(t_aud.name)
+                os.remove(final_bg_path)
+
             except Exception as e:
-                st.error(f"Bir hata oluştu: {e}")
+                st.error(f"Hata oluştu: {e}")
