@@ -1,12 +1,22 @@
 import streamlit as st
-import tempfile
 import os
+import sys
+import subprocess
+
+# Kütüphaneleri kod çalışırken yükle
+try:
+    import moviepy
+    import PIL
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "moviepy==1.0.3", "Pillow==9.5.0"])
+
+# Şimdi import et
 from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, TextClip
 from PIL import Image, ImageFilter
+import tempfile
 
-# Hata veren ANTIALIAS sorununu çözen satır
-if not hasattr(Image, 'Resampling'):
-    Image.Resampling = Image
+# Sayfa yapılandırması
+st.set_page_config(page_title="Music Video Maker", layout="centered")
     
 # Geri kalan kodların
 st.set_page_config(page_title="Music Video Maker", layout="centered")
