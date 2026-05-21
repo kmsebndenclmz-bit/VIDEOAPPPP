@@ -1,14 +1,17 @@
 import streamlit as st
 import tempfile
 import os
-from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, TextClip
-from PIL import Image, ImageFilter
+from PIL import Image
 
-# Hata giderme satırı
+# 1. Hata giderme satırı (PIL hatası için)
 if not hasattr(Image, 'Resampling'):
     Image.Resampling = Image
+if not hasattr(Image, 'ANTIALIAS'):
+    Image.ANTIALIAS = Image.Resampling.LANCZOS
 
-# Sayfa ayarları (SADECE 1 KEZ)
+from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
+
+# 2. Sayfa ayarları (SADECE 1 KEZ)
 st.set_page_config(page_title="Music Video Maker", layout="centered")
 
 st.title("🎵 Music Video Maker")
@@ -27,7 +30,6 @@ if st.button("Add New Label"):
 
 selected_label = st.selectbox("Select Label", st.session_state.labels)
 
-# Geri kalan kodlarını buranın altına olduğu gibi ekle
 # Dosya yükleme
 uploaded_image = st.file_uploader("Upload Cover Image", type=["png", "jpg", "jpeg"])
 uploaded_audio = st.file_uploader("Upload MP3 File", type=["mp3"])
@@ -35,18 +37,15 @@ uploaded_audio = st.file_uploader("Upload MP3 File", type=["mp3"])
 if uploaded_image and uploaded_audio:
     st.write("Video oluşturulmaya hazır!")
     
-    # Kullanıcı "Generate" butonuna basınca çalışacak kısım
     if st.button("Generate Music Video"):
-        with st.spinner("Video oluşturuluyor, lütfen bekleyin..."):
+        with st.spinner("Video oluşturuluyor..."):
             try:
-                # Geçici dosyaları oluştur
                 tfile_img = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
                 tfile_img.write(uploaded_image.read())
                 
                 tfile_aud = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
                 tfile_aud.write(uploaded_audio.read())
                 
-                # MoviePy işlemleri
                 audio_clip = AudioFileClip(tfile_aud.name)
                 image_clip = ImageClip(tfile_img.name).set_duration(audio_clip.duration)
                 video = CompositeVideoClip([image_clip.set_audio(audio_clip)])
