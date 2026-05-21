@@ -2,16 +2,22 @@ import streamlit as st
 import tempfile
 import os
 from PIL import Image
+import sys
 
-# 1. Hata giderme satırı (PIL hatası için)
+# 1. Hata giderme
 if not hasattr(Image, 'Resampling'):
     Image.Resampling = Image
 if not hasattr(Image, 'ANTIALIAS'):
     Image.ANTIALIAS = Image.Resampling.LANCZOS
 
-from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
+# MoviePy'yi import etmeden önce kütüphanenin yüklü olduğundan emin ol
+try:
+    from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
+except ImportError:
+    st.error("MoviePy yüklenemedi. Lütfen requirements.txt dosyanızı kontrol edin.")
+    st.stop()
 
-# 2. Sayfa ayarları (SADECE 1 KEZ)
+# 2. Sayfa ayarları
 st.set_page_config(page_title="Music Video Maker", layout="centered")
 
 st.title("🎵 Music Video Maker")
@@ -55,6 +61,5 @@ if uploaded_image and uploaded_audio:
                 
                 st.success("Video başarıyla oluşturuldu!")
                 st.video(output_filename)
-                
             except Exception as e:
                 st.error(f"Bir hata oluştu: {e}")
