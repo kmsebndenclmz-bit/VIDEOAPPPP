@@ -1,22 +1,10 @@
-import os
-import subprocess
-import sys
-
-# Kütüphaneleri otomatik kur
-try:
-    import moviepy
-    import PIL
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "moviepy", "Pillow"])
-
-# Kütüphaneleri import et
 import streamlit as st
 from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, TextClip
 from PIL import Image, ImageFilter
 import tempfile
+import os
 
 st.set_page_config(page_title="Music Video Maker", layout="centered")
-# ... geri kalan kodların ...
 
 import streamlit as st
 from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, TextClip
